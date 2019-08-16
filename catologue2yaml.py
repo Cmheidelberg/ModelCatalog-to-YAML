@@ -50,8 +50,6 @@ defaultInfo = defaultInfo.split('-')
 
 yamlMeta["name"] = defaultInfo[0]
 
-# Remove all non-numbers from the version
-defaultInfo[1] = ''.join([c for c in defaultInfo[1] if c in '1234567890.'])
 yamlMeta["version"] = defaultInfo[1]
 
 # Unneeded, but helpful data: description, author, keywords, label
@@ -59,7 +57,7 @@ yamlMeta["description"] = (metadata["desc"])["value"]
 
 authorName = ((metadata["authors"])["value"]).split("/")
 authorName = authorName[-1]
-yamlMeta["author"] = authorName
+yamlMeta["author"] = [authorName]
 
 keywords = (metadata["keywords"])["value"]
 keywords = keywords.split(';')
@@ -75,10 +73,9 @@ for i in keywords:
 yamlMeta["keywords"] = keywords
 yamlMeta["label"] = (metadata["label"])["value"]
 
+data = {}
 inputs = []
 outputs = []
-icount = 1
-ocount = 1
 for i in io:
     currIO = {}
     findIfInput = (i["prop"])["value"]
@@ -92,33 +89,33 @@ for i in io:
     currIO["type"] = "dcdom:" + itype[-1]
     currIO["dimensionality"] = int((i["dim"])["value"])
 
+    #sets up data
+    data[itype[-1]] = {}
+    (data[itype[-1]])["files"] = []
+
     if findIfInput[-1] == "hasInput":
-        prefix = 'i'
-        prefix = "-" + prefix + str(icount)
+        prefix = "-i" + str((i["position"])["value"])
         currIO["prefix"] = prefix
         inputs.append(currIO)
-        icount += 1
 
     elif findIfInput[-1] == "hasOutput":
-        prefix = 'o'
-        prefix = "-" + prefix + str(ocount)
+        prefix = "-o" + str((i["position"])["value"])
         currIO["prefix"] = prefix
         outputs.append(currIO)
-        ocount += 1
     else:
         print(findIfInput[-1] + " is unknown IO type")
 
-count = 1
 for p in parameters:
     currPar = {}
-    prefix = "p"
-
-    prefix = "-" + prefix + str(count)
-    # prefix = prefix + (p["position"])["value"]
+    prefix = "-p" + str((p["position"])["value"])
+    # prefix = prefix +
 
     currPar["role"] = (p["paramlabel"])["value"]
     currPar["isParam"] = True
     currPar["type"] = "xsd:" + (p["pdatatype"])["value"]
+    # currIO["dimensionality"] = int((p["dim"])["value"])
+    currPar["dimensionality"] = 0
+
     currPar["prefix"] = prefix
     currPar["paramDefaultValue"] = (p["defaultvalue"])["value"]
 
@@ -127,12 +124,16 @@ for p in parameters:
 
 yamlWings["inputs"] = inputs
 yamlWings["outputs"] = outputs
+rules = [1]
+rules[0] = (metadata["constraints"])["value"]
+yamlWings["rules"] = rules
 
-yamlWings["rules"] = (metadata["constraints"])["value"]
 src = ["src\\*"]
 yamlWings["src"] = src
 
 yamlWings["componentType"] = "Component"
+yamlWings["data"] = data
+
 
 yamlMeta["wings"] = yamlWings
 stream = open("wings-component.yaml", 'w+')
