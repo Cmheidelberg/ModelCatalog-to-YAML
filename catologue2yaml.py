@@ -13,7 +13,28 @@ logger.addHandler(handler)
 logger.setLevel(logging.DEBUG if os.getenv("WINGS_DEBUG", False) else logging.INFO)
 
 
-def make_yaml(url):
+def make_yaml(url,file_path=None):
+
+    # sets path, this determines where the component will be downloaded. Default is the current directory of the program
+    if file_path is None:
+        path = os.getcwd()
+    else:
+        path = file_path
+
+    fold_name = url.split('/')
+    fold_name = fold_name[-1]
+    path = os.path.join(path,fold_name)
+
+    if os.path.exists(path):
+        click.echo("\"" + path + "\" already exists. Do you want to overwrite it? [y/n]")
+        ans = input()
+        if ans.lower() == 'y' or ans.lower() == "yes":
+            shutil.rmtree(path)
+        else:
+            logger.info("Aborting Download")
+            exit(0)
+
+    os.mkdir(path)
 
     param_input = url # 'https://w3id.org/okn/i/mint/pihm-v2'
 
@@ -172,7 +193,8 @@ def make_yaml(url):
 
 
     yaml_meta["wings"] = yaml_wings
-    stream = open("wings-component.yaml", 'w+')
+
+    stream = open(os.path.join(path,"wings-component.yaml"), 'w+')
     yaml.dump(yaml_meta, stream, sort_keys=False)
 
     logger.info("Generated YAML")
@@ -180,6 +202,12 @@ def make_yaml(url):
 def _main():
     parser = argparse.ArgumentParser(
         description="Downloads component from the Model Catalog given the components url"
+    )
+    parser.add_argument(
+        "--file-path",
+        "-f",
+        type=str,
+        default=None,
     )
     parser.add_argument("url", help="URL of component")
     args = parser.parse_args()
